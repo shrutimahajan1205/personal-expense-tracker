@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Visual Analytics & Charts - ExpenseWise{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4">
+    <div class="col-12 col-md-6">
+        <h3 class="fw-bold mb-1">Financial Analytics & Insights</h3>
+        <p class="text-muted mb-0">Interactive visual charts for spending patterns, trends, and comparisons</p>
+    </div>
+    <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end gap-2">
+        <div class="d-flex align-items-center gap-2">
+            <label class="small text-muted fw-semibold">Period:</label>
+            <select id="analyticsMonthFilter" class="form-select form-select-sm" style="width: auto;">
+                <option value="">All Months</option>
+                {% for m in months %}
+                    <option value="{{ m.value }}" {% if m.value == current_month %}selected{% endif %}>{{ m.name }}</option>
+                {% endfor %}
+            </select>
+            <select id="analyticsYearFilter" class="form-select form-select-sm" style="width: auto;">
+                {% for y in years %}
+                    <option value="{{ y }}" {% if y == current_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Chart 1: Income vs Expense Comparison -->
+    <div class="col-12 col-lg-7">
+        <div class="content-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-bar-chart-fill text-primary me-2"></i>Income vs. Expenses (Last 6 Months)</span>
+            </div>
+            <div class="card-body p-4">
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="incomeExpenseBarChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 2: Category Breakdown -->
+    <div class="col-12 col-lg-5">
+        <div class="content-card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-bold"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Category-wise Expense Breakdown</span>
+            </div>
+            <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                <div style="position: relative; height: 320px; width: 100%;">
+                    <canvas id="categoryDoughnutChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Chart 3: Spending Trend (Last 30 Days) -->
+    <div class="col-12 col-lg-8">
+        <div class="content-card h-100">
+            <div class="card-header">
+                <span class="fw-bold"><i class="bi bi-graph-up text-primary me-2"></i>Daily Spending Trend (Last 30 Days)</span>
+            </div>
+            <div class="card-body p-4">
+                <div style="position: relative; height: 280px; width: 100%;">
+                    <canvas id="spendingTrendLineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 4: Payment Methods Breakdown -->
+    <div class="col-12 col-lg-4">
+        <div class="content-card h-100">
+            <div class="card-header">
+                <span class="fw-bold"><i class="bi bi-credit-card-2-front-fill text-primary me-2"></i>Payment Channels</span>
+            </div>
+            <div class="card-body p-4 d-flex align-items-center justify-content-center">
+                <div style="position: relative; height: 280px; width: 100%;">
+                    <canvas id="paymentMethodChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+{% endblock %}

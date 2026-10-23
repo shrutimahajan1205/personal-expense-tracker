@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_edit %}Edit Transaction{% else %}Add Transaction{% endif %} - ExpenseWise{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-md-8 col-lg-6">
+        <div class="content-card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <span class="fw-bold">
+                    <i class="bi {% if is_edit %}bi-pencil-square{% else %}bi-plus-circle{% endif %} text-primary me-2"></i>
+                    {% if is_edit %}Edit Transaction #{{ transaction.id }}{% else %}Add New Transaction{% endif %}
+                </span>
+                <a href="{{ url_for('expenses.index') }}" class="btn btn-sm btn-light border">&larr; Back to Ledger</a>
+            </div>
+            <div class="card-body p-4">
+                <form action="{% if is_edit %}{{ url_for('expenses.edit', id=transaction.id) }}{% else %}{{ url_for('expenses.add') }}{% endif %}" method="POST">
+                    
+                    <!-- Type selector -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small text-muted">Transaction Type</label>
+                        <div class="d-flex gap-2">
+                            <input type="radio" class="btn-check" name="type" id="typeExpense" value="expense" {% if not is_edit or transaction.type == 'expense' %}checked{% endif %}>
+                            <label class="btn btn-outline-danger w-50 fw-medium" for="typeExpense">
+                                <i class="bi bi-arrow-down-circle me-1"></i> Expense
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="type" id="typeIncome" value="income" {% if is_edit and transaction.type == 'income' %}checked{% endif %}>
+                            <label class="btn btn-outline-success w-50 fw-medium" for="typeIncome">
+                                <i class="bi bi-arrow-up-circle me-1"></i> Income
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="mb-3">
+                        <label for="title" class="form-label fw-semibold small text-muted">Title / Description</label>
+                        <input type="text" name="title" id="title" class="form-control" value="{{ transaction.title if transaction else '' }}" placeholder="e.g. Monthly Grocery, Client Project Payment" required>
+                    </div>
+
+                    <!-- Amount & Category -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="amount" class="form-label fw-semibold small text-muted">Amount ({{ current_user.currency }})</label>
+                            <input type="number" step="0.01" min="0.01" name="amount" id="amount" class="form-control" value="{{ transaction.amount if transaction else '' }}" placeholder="0.00" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="categorySelect" class="form-label fw-semibold small text-muted">Category</label>
+                            <select name="category_id" id="categorySelect" class="form-select" required>
+                                {% for c in categories %}
+                                    <option value="{{ c.id }}" data-type="{{ c.type }}" {% if transaction and transaction.category_id == c.id %}selected{% endif %}>
+                                        {{ c.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Date & Payment Method -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label for="date" class="form-label fw-semibold small text-muted">Date</label>
+                            <input type="date" name="date" id="date" class="form-control" value="{{ transaction.date.strftime('%Y-%m-%d') if transaction else '' }}" required>
+                        </div>
+                        <div class="col-6">
+                            <label for="payment_method" class="form-label fw-semibold small text-muted">Payment Method</label>
+                            <select name="payment_method" id="payment_method" class="form-select">
+                                <option value="UPI / GPay" {% if transaction and transaction.payment_method == 'UPI / GPay' %}selected{% endif %}>UPI / GPay / Paytm</option>
+                                <option value="Credit/Debit Card" {% if transaction and transaction.payment_method == 'Credit/Debit Card' %}selected{% endif %}>Credit / Debit Card</option>
+                                <option value="Cash" {% if transaction and transaction.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
+                                <option value="Net Banking" {% if transaction and transaction.payment_method == 'Net Banking' %}selected{% endif %}>Net Banking</option>
+                                <option value="Other" {% if transaction and transaction.payment_method == 'Other' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-4">
+                        <label for="notes" class="form-label fw-semibold small text-muted">Notes / Tags (Optional)</label>
+                        <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Additional details, tax invoice notes, receipt reference...">{{ transaction.notes if transaction and transaction.notes else '' }}</textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{{ url_for('expenses.index') }}" class="btn btn-light">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            {% if is_edit %}Save Changes{% else %}Add Transaction{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

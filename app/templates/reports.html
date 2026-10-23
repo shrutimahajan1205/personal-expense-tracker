@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Monthly Financial Report - {{ month_name }} - ExpenseWise{% endblock %}
+
+{% block content %}
+<div class="row align-items-center mb-4 no-print">
+    <div class="col-12 col-md-6">
+        <h3 class="fw-bold mb-1">Monthly Financial Report</h3>
+        <p class="text-muted mb-0">Bookkeeping, tax summaries, and monthly statements for <strong>{{ month_name }}</strong></p>
+    </div>
+    <div class="col-12 col-md-6 text-md-end mt-3 mt-md-0 d-flex justify-content-md-end align-items-center gap-2">
+        <form method="GET" class="d-flex align-items-center gap-1">
+            <select name="month" class="form-select form-select-sm" onchange="this.form.submit()">
+                {% for m in months %}
+                    <option value="{{ m.value }}" {% if m.value == selected_month %}selected{% endif %}>{{ m.name }}</option>
+                {% endfor %}
+            </select>
+            <select name="year" class="form-select form-select-sm" onchange="this.form.submit()">
+                {% for y in years %}
+                    <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <button onclick="window.print()" class="btn btn-outline-dark btn-sm d-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-printer-fill"></i> Print / Save PDF
+        </button>
+        <a href="{{ url_for('expenses.export_csv') }}" class="btn btn-outline-success btn-sm d-flex align-items-center gap-1 shadow-sm">
+            <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Report Document Area -->
+<div class="content-card p-4 p-md-5 bg-white border">
+    <!-- Report Header -->
+    <div class="d-flex justify-content-between align-items-start border-bottom pb-4 mb-4">
+        <div>
+            <h2 class="fw-bold text-primary mb-1">ExpenseWise</h2>
+            <h5 class="text-dark fw-bold mb-0">Financial Statement & Spending Summary</h5>
+            <span class="text-muted small">Generated for user: <strong>{{ current_user.username }}</strong> ({{ current_user.email }})</span>
+        </div>
+        <div class="text-end">
+            <span class="badge bg-primary fs-6 px-3 py-2 mb-1">{{ month_name }}</span>
+            <div class="text-muted small">Statement Date: {{ now.strftime('%d %b, %Y') }}</div>
+        </div>
+    </div>
+
+    <!-- Summary Balance Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-3">
+            <div class="p-3 border rounded-3 bg-light text-center">
+                <span class="small text-muted fw-semibold text-uppercase">Total Income</span>
+                <h4 class="text-success fw-bold mb-0 mt-1">+{{ total_income | currency(current_user.currency) }}</h4>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="p-3 border rounded-3 bg-light text-center">
+                <span class="small text-muted fw-semibold text-uppercase">Total Expenses</span>
+                <h4 class="text-danger fw-bold mb-0 mt-1">-{{ total_expense | currency(current_user.currency) }}</h4>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="p-3 border rounded-3 bg-light text-center">
+                <span class="small text-muted fw-semibold text-uppercase">Net Monthly Savings</span>
+                <h4 class="{% if net_savings >= 0 %}text-primary{% else %}text-danger{% endif %} fw-bold mb-0 mt-1">
+                    {{ net_savings | currency(current_user.currency) }}
+                </h4>
+            </div>
+        </div>
+        <div class="col-3">
+            <div class="p-3 border rounded-3 bg-light text-center">
+                <span class="small text-muted fw-semibold text-uppercase">Savings Rate</span>
+                <h4 class="text-dark fw-bold mb-0 mt-1">{{ savings_rate }}%</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Summary Breakdown Table -->
+    <div class="mb-5">
+        <h5 class="fw-bold mb-3 border-bottom pb-2">Category-wise Summary</h5>
+        {% if cat_summary %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th class="text-center">Transactions Count</th>
+                        <th class="text-end">Total Amount</th>
+                        <th class="text-end">% of Total Category Flow</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cat_summary %}
+                    <tr>
+                        <td class="fw-medium">{{ c.name }}</td>
+                        <td>
+                            <span class="badge {% if c.type == 'income' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ c.type | capitalize }}
+                            </span>
+                        </td>
+                        <td class="text-center">{{ c.count }}</td>
+                        <td class="text-end fw-bold">
+                            {% if c.type == 'income' %}
+                                <span class="text-success">+{{ c.total | currency(current_user.currency) }}</span>
+                            {% else %}
+                                <span class="text-danger">-{{ c.total | currency(current_user.currency) }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if c.type == 'expense' and total_expense > 0 %}
+                                {{ ((c.total / total_expense) * 100) | round(1) }}%
+                            {% elif c.type == 'income' and total_income > 0 %}
+                                {{ ((c.total / total_income) * 100) | round(1) }}%
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted small">No transactions found for this period.</p>
+        {% endif %}
+    </div>
+
+    <!-- Full Itemized Transaction Log -->
+    <div>
+        <h5 class="fw-bold mb-3 border-bottom pb-2">Itemized Transaction Record</h5>
+        {% if transactions %}
+        <div class="table-responsive">
+            <table class="table table-striped table-sm align-middle">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Date</th>
+                        <th>Title & Description</th>
+                        <th>Category</th>
+                        <th>Payment Method</th>
+                        <th>Type</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td class="text-muted small">{{ loop.index }}</td>
+                        <td class="small">{{ t.date.strftime('%d-%m-%Y') }}</td>
+                        <td>
+                            <span class="fw-medium">{{ t.title }}</span>
+                            {% if t.notes %}
+                            <div class="small text-muted fst-italic">{{ t.notes }}</div>
+                            {% endif %}
+                        </td>
+                        <td>{{ t.category.name }}</td>
+                        <td class="small">{{ t.payment_method }}</td>
+                        <td>
+                            <span class="badge {% if t.type == 'income' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ t.type | capitalize }}
+                            </span>
+                        </td>
+                        <td class="text-end fw-semibold">
+                            {% if t.type == 'income' %}
+                            <span class="text-success">+{{ t.amount | currency(current_user.currency) }}</span>
+                            {% else %}
+                            <span class="text-danger">-{{ t.amount | currency(current_user.currency) }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted small">No individual items recorded for this month.</p>
+        {% endif %}
+    </div>
+
+    <!-- Signature / End Note for College / Submission -->
+    <div class="mt-5 pt-4 border-top d-flex justify-content-between text-muted small">
+        <div>
+            <em>Personal Expense Tracker - Automated Report</em>
+        </div>
+        <div>
+            <em>Verified & Generated on: {{ now.strftime('%Y-%m-%d %H:%M:%S') }}</em>
+        </div>
+    </div>
+</div>
+{% endblock %}
